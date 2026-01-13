@@ -22,59 +22,63 @@ function DocumentList() {
   const documents = getFilteredDocuments()
 
   return (
-    <div className="w-72 border-r border-gray-200 bg-gray-50 flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800">文档</h2>
+    <div className="w-52 border-r border-gray-200/80 bg-gray-50/50 backdrop-blur-xl flex flex-col h-full">
+      <div className="px-3 py-2.5 border-b border-gray-200/80">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">文档</h2>
           <button
             onClick={() => createDocument()}
-            className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors"
+            className="w-6 h-6 flex items-center justify-center bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-all shadow-sm"
+            title="新建文档"
           >
-            + 新建
+            +
           </button>
         </div>
         <input
           type="text"
-          placeholder="搜索文档..."
+          placeholder="搜索..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-2.5 py-1.5 border border-gray-300/60 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white/80"
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto px-2 py-2">
         {documents.length === 0 ? (
-          <p className="text-center text-gray-500 text-sm py-8">
-            {searchQuery ? '没有找到匹配的文档' : '还没有文档，点击新建开始'}
+          <p className="text-center text-gray-400 text-xs py-6 px-2">
+            {searchQuery ? '无匹配文档' : '暂无文档'}
           </p>
         ) : (
           documents.map((doc) => (
             <div
               key={doc.id}
               onClick={() => setCurrentDocument(doc.id)}
-              className={`p-3 rounded-lg cursor-pointer mb-2 transition-colors ${currentDocumentId === doc.id
-                  ? 'bg-blue-100 border border-blue-300'
-                  : 'bg-white border border-gray-200 hover:bg-gray-100'
+              className={`px-2.5 py-2 rounded-lg cursor-pointer mb-1.5 transition-all group ${currentDocumentId === doc.id
+                ? 'bg-blue-500 text-white shadow-sm'
+                : 'bg-white/60 hover:bg-white hover:shadow-sm'
                 }`}
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-800 truncate flex-1">
+                <h3 className={`text-xs font-medium truncate flex-1 ${currentDocumentId === doc.id ? 'text-white' : 'text-gray-800'
+                  }`}>
                   {doc.title}
                 </h3>
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    if (confirm('确定删除这个文档吗？')) {
+                    if (confirm('确定删除？')) {
                       deleteDocument(doc.id)
                     }
                   }}
-                  className="text-gray-400 hover:text-red-500 ml-2 text-lg"
+                  className={`opacity-0 group-hover:opacity-100 ml-1.5 text-sm transition-opacity ${currentDocumentId === doc.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-red-500'
+                    }`}
                 >
                   ×
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(doc.updatedAt).toLocaleString('zh-CN')}
+              <p className={`text-[10px] mt-0.5 ${currentDocumentId === doc.id ? 'text-white/70' : 'text-gray-400'
+                }`}>
+                {new Date(doc.updatedAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
           ))
@@ -90,37 +94,37 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [showKey, setShowKey] = useState<string | null>(null)
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">设置</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+      <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-lg max-h-[70vh] overflow-hidden animate-slideIn">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/80">
+          <h2 className="text-sm font-semibold text-gray-800">设置</h2>
+          <button onClick={onClose} className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
             ×
           </button>
         </div>
 
-        <div className="p-4 overflow-y-auto max-h-[60vh]">
-          <h3 className="font-medium mb-4">AI 提供商配置</h3>
+        <div className="p-4 overflow-y-auto max-h-[calc(70vh-60px)]">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">AI 提供商</h3>
 
           {aiProviders.map((provider) => (
-            <div key={provider.id} className="border rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium">{provider.name}</span>
+            <div key={provider.id} className="border border-gray-200/80 rounded-lg p-3 mb-3 bg-white/60">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-sm font-medium text-gray-800">{provider.name}</span>
                 <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600">
                     <input
                       type="checkbox"
                       checked={provider.enabled}
                       onChange={(e) => updateProvider(provider.id, { enabled: e.target.checked })}
-                      className="rounded"
+                      className="rounded w-3.5 h-3.5"
                     />
                     启用
                   </label>
                   <button
                     onClick={() => setDefaultProvider(provider.id)}
-                    className={`text-xs px-2 py-1 rounded ${defaultProviderId === provider.id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                    className={`text-[10px] px-2 py-0.5 rounded-full transition-all ${defaultProviderId === provider.id
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                       }`}
                   >
                     {defaultProviderId === provider.id ? '默认' : '设为默认'}
@@ -128,43 +132,43 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div>
-                  <label className="text-sm text-gray-600">API Key</label>
-                  <div className="flex gap-2">
+                  <label className="text-[11px] text-gray-500 mb-1 block">API Key</label>
+                  <div className="flex gap-1.5">
                     <input
                       type={showKey === provider.id ? 'text' : 'password'}
                       value={provider.apiKey}
                       onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value })}
-                      className="flex-1 px-3 py-2 border rounded-md text-sm"
+                      className="flex-1 px-2.5 py-1.5 border border-gray-300/60 rounded-md text-xs bg-white/80 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       placeholder="输入 API Key"
                     />
                     <button
                       onClick={() => setShowKey(showKey === provider.id ? null : provider.id)}
-                      className="px-3 py-2 border rounded-md text-sm"
+                      className="px-2.5 py-1.5 border border-gray-300/60 rounded-md text-xs hover:bg-gray-50 transition-colors"
                     >
-                      {showKey === provider.id ? '隐藏' : '显示'}
+                      {showKey === provider.id ? '👁️' : '👁️‍🗨️'}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm text-gray-600">Base URL</label>
+                  <label className="text-[11px] text-gray-500 mb-1 block">Base URL</label>
                   <input
                     type="text"
                     value={provider.baseUrl}
                     onChange={(e) => updateProvider(provider.id, { baseUrl: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md text-sm"
+                    className="w-full px-2.5 py-1.5 border border-gray-300/60 rounded-md text-xs bg-white/80 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm text-gray-600">模型</label>
+                  <label className="text-[11px] text-gray-500 mb-1 block">模型</label>
                   <input
                     type="text"
                     value={provider.model}
                     onChange={(e) => updateProvider(provider.id, { model: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md text-sm"
+                    className="w-full px-2.5 py-1.5 border border-gray-300/60 rounded-md text-xs bg-white/80 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -215,44 +219,44 @@ function AIEditDialog({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-xl">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            ✨ AI 编辑
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+      <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-md animate-slideIn">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200/80">
+          <h2 className="text-sm font-semibold flex items-center gap-1.5 text-gray-800">
+            <span className="text-base">✨</span> AI 编辑
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">
+          <button onClick={onClose} className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
             ×
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-3">
           {selectedText && (
             <div>
-              <label className="text-sm text-gray-600">选中的文本：</label>
-              <div className="mt-1 p-3 bg-gray-100 rounded-md text-sm max-h-24 overflow-y-auto">
+              <label className="text-[11px] text-gray-500 mb-1 block">选中的文本</label>
+              <div className="p-2.5 bg-gray-100/80 rounded-lg text-xs max-h-20 overflow-y-auto text-gray-700">
                 {selectedText}
               </div>
             </div>
           )}
 
           <div>
-            <label className="text-sm text-gray-600">编辑指令：</label>
+            <label className="text-[11px] text-gray-500 mb-1 block">编辑指令</label>
             <textarea
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border rounded-md text-sm resize-none"
+              className="w-full px-2.5 py-2 border border-gray-300/60 rounded-lg text-xs resize-none bg-white/80 focus:outline-none focus:ring-1 focus:ring-blue-500"
               rows={3}
               placeholder="输入你想要的编辑指令..."
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {quickPrompts.map((prompt) => (
               <button
                 key={prompt}
                 onClick={() => setInstruction(prompt)}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
+                className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-[11px] text-gray-700 transition-colors"
               >
                 {prompt}
               </button>
@@ -261,8 +265,8 @@ function AIEditDialog({
 
           {result && (
             <div>
-              <label className="text-sm text-gray-600">AI 结果：</label>
-              <div className="mt-1 p-3 bg-green-50 border border-green-200 rounded-md text-sm max-h-32 overflow-y-auto">
+              <label className="text-[11px] text-gray-500 mb-1 block">AI 结果</label>
+              <div className="p-2.5 bg-green-50/80 border border-green-200/60 rounded-lg text-xs max-h-28 overflow-y-auto text-gray-700">
                 {result}
               </div>
             </div>
@@ -271,14 +275,14 @@ function AIEditDialog({
           <div className="flex justify-end gap-2 pt-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 border rounded-md text-sm hover:bg-gray-50"
+              className="px-3 py-1.5 border border-gray-300/60 rounded-lg text-xs hover:bg-gray-50 transition-colors"
             >
               取消
             </button>
             {result ? (
               <button
                 onClick={() => onApply(result)}
-                className="px-4 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600"
+                className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs hover:bg-green-600 transition-colors shadow-sm"
               >
                 应用
               </button>
@@ -286,7 +290,7 @@ function AIEditDialog({
               <button
                 onClick={handleSubmit}
                 disabled={!instruction || loading}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 disabled:opacity-50"
+                className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-sm"
               >
                 {loading ? '处理中...' : '开始编辑'}
               </button>
@@ -312,44 +316,44 @@ function FloatingToolbar({
 
   return (
     <div
-      className="fixed bg-white shadow-lg rounded-lg border border-gray-200 flex overflow-hidden z-40"
-      style={{ top: position.top - 45, left: position.left }}
+      className="fixed bg-white/95 backdrop-blur-xl shadow-xl rounded-lg border border-gray-200/80 flex overflow-hidden z-40 animate-fadeIn"
+      style={{ top: position.top - 42, left: position.left }}
     >
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`px-3 py-2 text-sm hover:bg-gray-100 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
+        className={`px-2.5 py-1.5 text-xs hover:bg-gray-100 transition-colors ${editor.isActive('bold') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'}`}
         title="加粗"
       >
         <strong>B</strong>
       </button>
       <button
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`px-3 py-2 text-sm hover:bg-gray-100 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
+        className={`px-2.5 py-1.5 text-xs hover:bg-gray-100 transition-colors ${editor.isActive('italic') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'}`}
         title="斜体"
       >
         <em>I</em>
       </button>
       <button
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={`px-3 py-2 text-sm hover:bg-gray-100 ${editor.isActive('strike') ? 'bg-gray-200' : ''}`}
+        className={`px-2.5 py-1.5 text-xs hover:bg-gray-100 transition-colors ${editor.isActive('strike') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'}`}
         title="删除线"
       >
         <s>S</s>
       </button>
       <button
         onClick={() => editor.chain().focus().toggleCode().run()}
-        className={`px-3 py-2 text-sm hover:bg-gray-100 ${editor.isActive('code') ? 'bg-gray-200' : ''}`}
+        className={`px-2.5 py-1.5 text-xs hover:bg-gray-100 transition-colors ${editor.isActive('code') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'}`}
         title="代码"
       >
         {'</>'}
       </button>
-      <div className="w-px bg-gray-200" />
+      <div className="w-px bg-gray-200/60" />
       <button
         onClick={onAIEdit}
-        className="px-3 py-2 text-sm hover:bg-purple-100 text-purple-600"
+        className="px-2.5 py-1.5 text-xs hover:bg-purple-50 text-purple-600 transition-colors font-medium"
         title="AI 编辑"
       >
-        ✨
+        ✨ AI
       </button>
     </div>
   )
@@ -471,42 +475,41 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-screen flex flex-col bg-gray-50/30">
       {/* Header */}
-      <header className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xl">📝</span>
-          <span className="font-semibold text-gray-800">AI 文本编辑器</span>
+      <header className="border-b border-gray-200/80 px-3 py-2 flex items-center justify-between bg-white/80 backdrop-blur-xl">
+        <div className="flex items-center gap-2">
+          <span className="text-base">📝</span>
+          <span className="text-sm font-semibold text-gray-800">AI 文本编辑器</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSettings(true)}
-            className="px-3 py-1.5 border border-gray-300 text-sm rounded-md hover:bg-gray-50"
-          >
-            ⚙️ 设置
-          </button>
-        </div>
+        <button
+          onClick={() => setShowSettings(true)}
+          className="px-2.5 py-1 border border-gray-300/60 text-xs rounded-md hover:bg-gray-50 transition-colors flex items-center gap-1"
+        >
+          <span>⚙️</span>
+          <span>设置</span>
+        </button>
       </header>
 
       {/* Main */}
       <div className="flex-1 flex overflow-hidden">
         <DocumentList />
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-white">
           {currentDocument ? (
             <>
-              <div className="px-6 py-3 border-b border-gray-200">
+              <div className="px-4 py-2.5 border-b border-gray-200/80">
                 <input
                   type="text"
                   value={currentDocument.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="text-xl font-semibold w-full border-none outline-none bg-transparent"
+                  className="text-base font-semibold w-full border-none outline-none bg-transparent text-gray-800 placeholder-gray-400"
                   placeholder="文档标题..."
                 />
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto px-4 py-3">
                 <TiptapEditor
                   content={currentDocument.content}
                   onUpdate={handleContentChange}
@@ -518,12 +521,12 @@ export default function App() {
           ) : (
             <div className="flex-1 flex items-center justify-center text-center">
               <div>
-                <div className="text-6xl mb-4">📄</div>
-                <h3 className="text-xl font-medium text-gray-800 mb-2">
+                <div className="text-5xl mb-3 opacity-40">📄</div>
+                <h3 className="text-base font-medium text-gray-700 mb-1.5">
                   欢迎使用 AI 文本编辑器
                 </h3>
-                <p className="text-gray-500">
-                  选择一个文档开始编辑，或创建一个新文档
+                <p className="text-xs text-gray-400">
+                  选择或创建一个文档开始编辑
                 </p>
               </div>
             </div>
