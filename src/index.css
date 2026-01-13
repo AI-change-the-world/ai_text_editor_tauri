@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tippy.js 样式 */
+@import 'tippy.js/dist/tippy.css';
+
 * {
     box-sizing: border-box;
     margin: 0;

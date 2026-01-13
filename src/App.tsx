@@ -2,9 +2,12 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import CharacterCount from '@tiptap/extension-character-count'
 import { useDocumentsStore } from './store/documents'
 import { useSettingsStore } from './store/settings'
 import { callAI } from './services/ai'
+import { SlashCommand } from './extensions/SlashCommand'
+import { AIEditPopover } from './components/AIEditPopover'
 import './index.css'
 
 // 文档列表组件
@@ -302,6 +305,159 @@ function AIEditDialog({
   )
 }
 
+// 固定工具栏组件
+function EditorToolbar({ editor, onAIEdit }: { editor: any; onAIEdit: () => void }) {
+  if (!editor) return null
+
+  return (
+    <div className="border-b border-gray-200/60 px-2 py-1.5 bg-gray-50/50 flex items-center gap-1 flex-wrap">
+      {/* 文本格式 */}
+      <div className="flex items-center gap-0.5">
+        <button
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('bold') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="加粗 (Cmd+B)"
+        >
+          <strong>B</strong>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('italic') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="斜体 (Cmd+I)"
+        >
+          <em>I</em>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('strike') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="删除线"
+        >
+          <s>S</s>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('code') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="代码"
+        >
+          {'</>'}
+        </button>
+      </div>
+
+      <div className="w-px h-4 bg-gray-300/60" />
+
+      {/* 标题 */}
+      <div className="flex items-center gap-0.5">
+        <button
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="标题 1"
+        >
+          H1
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="标题 2"
+        >
+          H2
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="标题 3"
+        >
+          H3
+        </button>
+      </div>
+
+      <div className="w-px h-4 bg-gray-300/60" />
+
+      {/* 列表 */}
+      <div className="flex items-center gap-0.5">
+        <button
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('bulletList') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="无序列表"
+        >
+          •
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('orderedList') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="有序列表"
+        >
+          1.
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('blockquote') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="引用"
+        >
+          "
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          className={`px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors ${editor.isActive('codeBlock') ? 'bg-blue-100 text-blue-600' : 'text-gray-700'
+            }`}
+          title="代码块"
+        >
+          {'{ }'}
+        </button>
+      </div>
+
+      <div className="w-px h-4 bg-gray-300/60" />
+
+      {/* 其他 */}
+      <div className="flex items-center gap-0.5">
+        <button
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          className="px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors text-gray-700"
+          title="分隔线"
+        >
+          —
+        </button>
+        <button
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+          className="px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors text-gray-700 disabled:opacity-30"
+          title="撤销 (Cmd+Z)"
+        >
+          ↶
+        </button>
+        <button
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+          className="px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors text-gray-700 disabled:opacity-30"
+          title="重做 (Cmd+Shift+Z)"
+        >
+          ↷
+        </button>
+      </div>
+
+      <div className="flex-1" />
+
+      {/* AI 按钮 */}
+      <button
+        onClick={onAIEdit}
+        className="px-2.5 py-1 text-xs rounded bg-purple-500 text-white hover:bg-purple-600 transition-colors font-medium shadow-sm"
+        title="AI 编辑"
+      >
+        ✨ AI
+      </button>
+    </div>
+  )
+}
+
 // 浮动工具栏组件
 function FloatingToolbar({
   editor,
@@ -369,7 +525,7 @@ function TiptapEditor({
   content: string
   onUpdate: (html: string) => void
   onSelectionChange: (text: string) => void
-  onAIEdit: () => void
+  onAIEdit: (position: { top: number; left: number }) => void
 }) {
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -378,8 +534,10 @@ function TiptapEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: '开始编写...',
+        placeholder: '开始编写... (输入 / 显示命令)',
       }),
+      CharacterCount,
+      SlashCommand,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -417,6 +575,24 @@ function TiptapEditor({
     },
   })
 
+  // 监听 AI 编辑事件（从 Slash Command 触发）
+  useEffect(() => {
+    const handleOpenAIEdit = () => {
+      if (editor) {
+        const { view } = editor
+        const { from } = view.state.selection
+        const coords = view.coordsAtPos(from)
+
+        onAIEdit({
+          top: coords.top,
+          left: coords.left,
+        })
+      }
+    }
+    window.addEventListener('openAIEdit', handleOpenAIEdit)
+    return () => window.removeEventListener('openAIEdit', handleOpenAIEdit)
+  }, [editor, onAIEdit])
+
   // 当 content 变化时更新编辑器
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
@@ -426,14 +602,46 @@ function TiptapEditor({
 
   if (!editor) return null
 
+  const charCount = editor.storage.characterCount.characters()
+  const wordCount = editor.storage.characterCount.words()
+
+  const handleAIEditClick = () => {
+    const { view } = editor
+    const { from } = view.state.selection
+    const coords = view.coordsAtPos(from)
+
+    onAIEdit({
+      top: coords.top,
+      left: coords.left,
+    })
+  }
+
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative h-full flex flex-col">
+      {/* 固定工具栏 */}
+      <EditorToolbar editor={editor} onAIEdit={handleAIEditClick} />
+
+      {/* 浮动工具栏（选中文本时显示） */}
       <FloatingToolbar
         editor={editor}
         position={toolbarPosition}
-        onAIEdit={onAIEdit}
+        onAIEdit={handleAIEditClick}
       />
-      <EditorContent editor={editor} className="prose max-w-none" />
+
+      <div className="flex-1 overflow-y-auto px-1 py-2">
+        <EditorContent editor={editor} className="prose max-w-none" />
+      </div>
+
+      {/* 字数统计 */}
+      <div className="sticky bottom-0 px-3 py-1.5 bg-gray-50/80 backdrop-blur-sm border-t border-gray-200/60 flex items-center justify-between text-[10px] text-gray-400">
+        <div className="flex items-center gap-3">
+          <span>{charCount} 字符</span>
+          <span>{wordCount} 词</span>
+        </div>
+        <div className="text-gray-300">
+          {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
     </div>
   )
 }
@@ -442,7 +650,7 @@ function TiptapEditor({
 export default function App() {
   const { getCurrentDocument, updateDocument, currentDocumentId } = useDocumentsStore()
   const [showSettings, setShowSettings] = useState(false)
-  const [showAIDialog, setShowAIDialog] = useState(false)
+  const [aiPopoverPosition, setAIPopoverPosition] = useState<{ top: number; left: number } | null>(null)
   const [selectedText, setSelectedText] = useState('')
 
   const currentDocument = getCurrentDocument()
@@ -459,18 +667,15 @@ export default function App() {
     }
   }
 
-  const handleAIEdit = () => {
-    if (selectedText) {
-      setShowAIDialog(true)
-    } else {
-      alert('请先选中需要编辑的文本')
-    }
+  const handleAIEdit = (position: { top: number; left: number }) => {
+    setAIPopoverPosition(position)
   }
 
   const handleApplyAIResult = (text: string) => {
+    // 直接插入文本到光标位置
     navigator.clipboard.writeText(text)
-    alert('AI 编辑结果已复制到剪贴板，请粘贴替换选中的文本')
-    setShowAIDialog(false)
+    alert('AI 结果已复制到剪贴板，请粘贴到编辑器')
+    setAIPopoverPosition(null)
     setSelectedText('')
   }
 
@@ -536,11 +741,12 @@ export default function App() {
 
       {/* Dialogs */}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
-      {showAIDialog && (
-        <AIEditDialog
+      {aiPopoverPosition && (
+        <AIEditPopover
+          position={aiPopoverPosition}
           selectedText={selectedText}
           onApply={handleApplyAIResult}
-          onClose={() => setShowAIDialog(false)}
+          onClose={() => setAIPopoverPosition(null)}
         />
       )}
     </div>
