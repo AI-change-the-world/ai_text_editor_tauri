@@ -1,0 +1,178 @@
+import { invoke } from '@tauri-apps/api/core'
+
+// ============ 窗口管理 API ============
+
+export const windowAPI = {
+    async openEditor(fileId: string): Promise<string> {
+        return invoke('open_editor_window', { fileId })
+    },
+}
+
+// ============ 类型定义 ============
+
+export interface Workspace {
+    id: string
+    name: string
+    description?: string
+    created_at: string
+    updated_at: string
+}
+
+export interface File {
+    id: string
+    workspace_id: string
+    file_type: 'document' | 'image' | 'audio' | 'video'
+    title: string
+    content?: string
+    file_path?: string
+    file_size?: number
+    mime_type?: string
+    created_at: string
+    updated_at: string
+}
+
+export interface Tag {
+    id: string
+    name: string
+    color?: string
+    created_at: string
+}
+
+export interface SearchResult {
+    id: string
+    workspace_id: string
+    file_type: string
+    title: string
+    content?: string
+    file_path?: string
+    created_at: string
+    updated_at: string
+    rank: number
+}
+
+// ============ 工作空间 API ============
+
+export const workspaceAPI = {
+    async create(name: string, description?: string): Promise<Workspace> {
+        return invoke('create_workspace', { data: { name, description } })
+    },
+
+    async get(id: string): Promise<Workspace | null> {
+        return invoke('get_workspace', { id })
+    },
+
+    async list(): Promise<Workspace[]> {
+        return invoke('list_workspaces')
+    },
+
+    async update(id: string, data: { name?: string; description?: string }): Promise<Workspace> {
+        return invoke('update_workspace', { id, data })
+    },
+
+    async delete(id: string): Promise<void> {
+        return invoke('delete_workspace', { id })
+    },
+}
+
+// ============ 文件 API ============
+
+export const fileAPI = {
+    async create(data: {
+        workspace_id: string
+        file_type: 'document' | 'image' | 'audio' | 'video'
+        title: string
+        content?: string
+        file_path?: string
+        file_size?: number
+        mime_type?: string
+    }): Promise<File> {
+        return invoke('create_file', { data })
+    },
+
+    async get(id: string): Promise<File | null> {
+        return invoke('get_file', { id })
+    },
+
+    async listByWorkspace(workspaceId: string): Promise<File[]> {
+        return invoke('list_files_by_workspace', { workspaceId })
+    },
+
+    async listByType(workspaceId: string, fileType: string): Promise<File[]> {
+        return invoke('list_files_by_type', { workspaceId, fileType })
+    },
+
+    async update(
+        id: string,
+        data: {
+            title?: string
+            content?: string
+            file_path?: string
+            file_size?: number
+            mime_type?: string
+        }
+    ): Promise<File> {
+        return invoke('update_file', { id, data })
+    },
+
+    async delete(id: string): Promise<void> {
+        return invoke('delete_file', { id })
+    },
+}
+
+// ============ 标签 API ============
+
+export const tagAPI = {
+    async create(name: string, color?: string): Promise<Tag> {
+        return invoke('create_tag', { data: { name, color } })
+    },
+
+    async get(id: string): Promise<Tag | null> {
+        return invoke('get_tag', { id })
+    },
+
+    async list(): Promise<Tag[]> {
+        return invoke('list_tags')
+    },
+
+    async delete(id: string): Promise<void> {
+        return invoke('delete_tag', { id })
+    },
+
+    async addToFile(fileId: string, tagId: string): Promise<void> {
+        return invoke('add_file_tag', { fileId, tagId })
+    },
+
+    async removeFromFile(fileId: string, tagId: string): Promise<void> {
+        return invoke('remove_file_tag', { fileId, tagId })
+    },
+
+    async getFileTags(fileId: string): Promise<Tag[]> {
+        return invoke('get_file_tags', { fileId })
+    },
+}
+
+// ============ 搜索 API ============
+
+export const searchAPI = {
+    async search(query: {
+        query: string
+        workspace_id?: string
+        file_type?: string
+        tags?: string[]
+        limit?: number
+    }): Promise<SearchResult[]> {
+        return invoke('search_files', { query })
+    },
+
+    async searchByTags(
+        tagNames: string[],
+        workspaceId?: string,
+        matchAll: boolean = false
+    ): Promise<SearchResult[]> {
+        return invoke('search_by_tags', { workspaceId, tagNames, matchAll })
+    },
+
+    async findSimilar(fileId: string, limit: number = 10): Promise<SearchResult[]> {
+        return invoke('find_similar_files', { fileId, limit })
+    },
+}
