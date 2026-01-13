@@ -1,150 +1,99 @@
 import { create } from 'zustand'
-import { Document } from '../types'
-import { TauriService } from '../services/tauri'
+import { persist } from 'zustand/middleware'
+
+export interface Document {
+    id: string
+    title: string
+    content: string
+    createdAt: string
+    updatedAt: string
+}
 
 interface DocumentsState {
     documents: Document[]
-    currentDocument: Document | null
+    currentDocumentId: string | null
     searchQuery: string
-    isLoading: boolean
 
-    // Actions
-    loadDocuments: () => Promise<void>
-    createDocument: (title?: string) => Promise<Document>
-    updateDocument: (id: string, updates: Partial<Document>) => Promise<void>
-    deleteDocument: (id: string) => Promise<void>
-    setCurrentDocument: (document: Document | null) => void
-    searchDocuments: (query: string) => Promise<void>
+    createDocument: (title?: string) => Document
+    updateDocument: (id: string, updates: Partial<Document>) => void
+    deleteDocument: (id: string) => void
+    setCurrentDocument: (id: string | null) => void
     setSearchQuery: (query: string) => void
-    getDocument: (id: string) => Document | undefined
+    getCurrentDocument: () => Document | null
+    getFilteredDocuments: () => Document[]
 }
 
-export const useDocumentsStore = create<DocumentsState>((set, get) => ({
-    documents: [],
-    currentDocument: null,
-    searchQuery: '',
-    isLoading: false,
+const generateId = () => Math.random().toString(36).substr(2, 9)
 
-    loadDocuments: async () => {
-        set({ isLoading: true })
-        try {
-            const documents = await TauriService.getAllDocuments()
-            // Convert date strings to Date objects
-            const processedDocuments = documents.map(doc => ({
-                ...doc,
-                createdAt: new Date(doc.createdAt),
-                updatedAt: new Date(doc.updatedAt),
-            }))
-            set({ documents: processedDocuments })
-        } catch (error) {
-            console.error('Failed to load documents:', error)
-        } finally {
-            set({ isLoading: false })
-        }
-    },
+export const useDocumentsStore = create<DocumentsState>()(
+    persist(
+        (set, get) => ({
+            documents: [],
+            currentDocumentId: null,
+            searchQuery: '',
 
-    createDocument: async (title?: string) => {
-        try {
-            const newDocument = await TauriService.createDocument({ title })
-            const processedDocument = {
-                ...newDocument,
-                createdAt: new Date(newDocument.createdAt),
-                updatedAt: new Date(newDocument.updatedAt),
-            }
-
-            set((state) => ({
-                documents: [processedDocument, ...state.documents],
-                currentDocument: processedDocument,
-            }))
-
-            return processedDocument
-        } catch (error) {
-            console.error('Failed to create document:', error)
-            throw error
-        }
-    },
-
-    updateDocument: async (id: string, updates: Partial<Document>) => {
-        try {
-            const updateRequest: any = {}
-            if (updates.title !== undefined) updateRequest.title = updates.title
-            if (updates.content !== undefined) updateRequest.content = updates.content
-            if (updates.tags !== undefined) updateRequest.tags = updates.tags
-
-            const updatedDocument = await TauriService.updateDocument(id, updateRequest)
-
-            if (updatedDocument) {
-                const processedDocument = {
-                    ...updatedDocument,
-                    createdAt: new Date(updatedDocument.createdAt),
-                    updatedAt: new Date(updatedDocument.updatedAt),
+            createDocument: (title?: string) => {
+                const now = new Date().toISOString()
+                const newDocument: Document = {
+                    id: generateId(),
+                    title: title || '未命名文档',
+                    content: '<p></p>',
+                    createdAt: now,
+                    updatedAt: now,
                 }
 
-                set((state) => {
-                    const updatedDocuments = state.documents.map((doc) =>
-                        doc.id === id ? processedDocument : doc
-                    )
+                set((state) => ({
+                    documents: [newDocument, ...state.documents],
+                    currentDocumentId: newDocument.id,
+                }))
 
-                    const updatedCurrentDocument =
-                        state.currentDocument?.id === id ? processedDocument : state.currentDocument
+                return newDocument
+            },
 
-                    return {
-                        documents: updatedDocuments,
-                        currentDocument: updatedCurrentDocument,
-                    }
-                })
-            }
-        } catch (error) {
-            console.error('Failed to update document:', error)
-        }
-    },
+            updateDocument: (id: string, updates: Partial<Document>) => {
+                set((state) => ({
+                    documents: state.documents.map((doc) =>
+                        doc.id === id
+                            ? { ...doc, ...updates, updatedAt: new Date().toISOString() }
+                            : doc
+                    ),
+                }))
+            },
 
-    deleteDocument: async (id: string) => {
-        try {
-            const success = await TauriService.deleteDocument(id)
-            if (success) {
+            deleteDocument: (id: string) => {
                 set((state) => ({
                     documents: state.documents.filter((doc) => doc.id !== id),
-                    currentDocument:
-                        state.currentDocument?.id === id ? null : state.currentDocument,
+                    currentDocumentId: state.currentDocumentId === id ? null : state.currentDocumentId,
                 }))
-            }
-        } catch (error) {
-            console.error('Failed to delete document:', error)
+            },
+
+            setCurrentDocument: (id: string | null) => {
+                set({ currentDocumentId: id })
+            },
+
+            setSearchQuery: (query: string) => {
+                set({ searchQuery: query })
+            },
+
+            getCurrentDocument: () => {
+                const { documents, currentDocumentId } = get()
+                return documents.find((doc) => doc.id === currentDocumentId) || null
+            },
+
+            getFilteredDocuments: () => {
+                const { documents, searchQuery } = get()
+                if (!searchQuery.trim()) return documents
+
+                const query = searchQuery.toLowerCase()
+                return documents.filter(
+                    (doc) =>
+                        doc.title.toLowerCase().includes(query) ||
+                        doc.content.toLowerCase().includes(query)
+                )
+            },
+        }),
+        {
+            name: 'ai-editor-documents',
         }
-    },
-
-    setCurrentDocument: (document: Document | null) => {
-        set({ currentDocument: document })
-    },
-
-    searchDocuments: async (query: string) => {
-        set({ searchQuery: query })
-        if (!query.trim()) {
-            // If no query, reload all documents
-            await get().loadDocuments()
-            return
-        }
-
-        try {
-            const results = await TauriService.searchDocuments({ query })
-            const processedResults = results.map(doc => ({
-                ...doc,
-                createdAt: new Date(doc.createdAt),
-                updatedAt: new Date(doc.updatedAt),
-            }))
-            set({ documents: processedResults })
-        } catch (error) {
-            console.error('Failed to search documents:', error)
-        }
-    },
-
-    setSearchQuery: (query: string) => {
-        set({ searchQuery: query })
-    },
-
-    getDocument: (id: string) => {
-        const { documents } = get()
-        return documents.find((doc) => doc.id === id)
-    },
-}))
+    )
+)
