@@ -28,7 +28,8 @@ pub struct File {
     pub workspace_id: String,
     pub file_type: String, // document, image, audio, video
     pub title: String,
-    pub content: Option<String>,
+    pub content: Option<String>,       // HTML 内容
+    pub content_plain: Option<String>, // 纯文本（用于索引）
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub mime_type: Option<String>,
@@ -42,6 +43,7 @@ pub struct CreateFile {
     pub file_type: String,
     pub title: String,
     pub content: Option<String>,
+    pub content_plain: Option<String>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub mime_type: Option<String>,
@@ -51,9 +53,35 @@ pub struct CreateFile {
 pub struct UpdateFile {
     pub title: Option<String>,
     pub content: Option<String>,
+    pub content_plain: Option<String>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub mime_type: Option<String>,
+}
+
+// 媒体资源
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct MediaAsset {
+    pub id: String,
+    pub workspace_id: String,
+    pub file_name: String,
+    pub file_path: String,
+    pub file_size: i64,
+    pub mime_type: String,
+    pub width: Option<i32>,
+    pub height: Option<i32>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateMediaAsset {
+    pub workspace_id: String,
+    pub file_name: String,
+    pub file_path: String,
+    pub file_size: i64,
+    pub mime_type: String,
+    pub width: Option<i32>,
+    pub height: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]

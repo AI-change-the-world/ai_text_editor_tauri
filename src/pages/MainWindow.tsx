@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { workspaceAPI, fileAPI, searchAPI, type Workspace, type File } from '../services/database'
+import { workspaceAPI, fileAPI, searchAPI, windowAPI, type Workspace, type File } from '../services/database'
 import { invoke } from '@tauri-apps/api/core'
-import { useSettingsStore } from '../store/settings'
 import { migrateFromLocalStorage } from '../utils/migration'
 import { WorkspaceDialog } from '../components/WorkspaceDialog'
 import { FileDialog } from '../components/FileDialog'
@@ -11,7 +10,6 @@ export default function MainWindow() {
     const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null)
     const [files, setFiles] = useState<File[]>([])
     const [searchQuery, setSearchQuery] = useState('')
-    const [showSettings, setShowSettings] = useState(false)
     const [showWorkspaceDialog, setShowWorkspaceDialog] = useState(false)
     const [showFileDialog, setShowFileDialog] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -140,10 +138,10 @@ export default function MainWindow() {
             <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <span className="text-xl">📝</span>
-                    <span className="font-semibold text-gray-800">AI 文本编辑器</span>
+                    <span className="font-semibold text-gray-800">云笺妙笔</span>
                 </div>
                 <button
-                    onClick={() => setShowSettings(true)}
+                    onClick={() => windowAPI.openSettings()}
                     className="px-3 py-1.5 border border-gray-300 text-sm rounded-md hover:bg-gray-50"
                 >
                     ⚙️ 设置
@@ -282,9 +280,6 @@ export default function MainWindow() {
                 </div>
             </div>
 
-            {/* 设置面板 */}
-            {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
-
             {/* 工作空间对话框 */}
             {showWorkspaceDialog && (
                 <WorkspaceDialog
@@ -300,98 +295,6 @@ export default function MainWindow() {
                     onClose={() => setShowFileDialog(false)}
                 />
             )}
-        </div>
-    )
-}
-
-// 设置面板组件（复用之前的）
-function SettingsPanel({ onClose }: { onClose: () => void }) {
-    const { aiProviders, updateProvider, setDefaultProvider, defaultProviderId } = useSettingsStore()
-    const [showKey, setShowKey] = useState<string | null>(null)
-
-    return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold">设置</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">
-                        ×
-                    </button>
-                </div>
-
-                <div className="p-4 overflow-y-auto max-h-[70vh]">
-                    <h3 className="font-medium mb-4">AI 提供商配置</h3>
-
-                    {aiProviders.map((provider) => (
-                        <div key={provider.id} className="border rounded-lg p-4 mb-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="font-medium">{provider.name}</span>
-                                <div className="flex items-center gap-2">
-                                    <label className="flex items-center gap-2 text-sm">
-                                        <input
-                                            type="checkbox"
-                                            checked={provider.enabled}
-                                            onChange={(e) => updateProvider(provider.id, { enabled: e.target.checked })}
-                                            className="rounded"
-                                        />
-                                        启用
-                                    </label>
-                                    <button
-                                        onClick={() => setDefaultProvider(provider.id)}
-                                        className={`text-xs px-2 py-1 rounded ${defaultProviderId === provider.id
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-gray-200 text-gray-700'
-                                            }`}
-                                    >
-                                        {defaultProviderId === provider.id ? '默认' : '设为默认'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="text-sm text-gray-600">API Key</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type={showKey === provider.id ? 'text' : 'password'}
-                                            value={provider.apiKey}
-                                            onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value })}
-                                            className="flex-1 px-3 py-2 border rounded-md text-sm"
-                                            placeholder="输入 API Key"
-                                        />
-                                        <button
-                                            onClick={() => setShowKey(showKey === provider.id ? null : provider.id)}
-                                            className="px-3 py-2 border rounded-md text-sm"
-                                        >
-                                            {showKey === provider.id ? '隐藏' : '显示'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-sm text-gray-600">Base URL</label>
-                                    <input
-                                        type="text"
-                                        value={provider.baseUrl}
-                                        onChange={(e) => updateProvider(provider.id, { baseUrl: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-md text-sm"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-sm text-gray-600">模型</label>
-                                    <input
-                                        type="text"
-                                        value={provider.model}
-                                        onChange={(e) => updateProvider(provider.id, { model: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-md text-sm"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
         </div>
     )
 }

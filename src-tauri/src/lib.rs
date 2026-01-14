@@ -14,6 +14,8 @@ pub struct AppState {
     pub file_service: FileService,
     pub tag_service: TagService,
     pub search_service: SearchService,
+    pub media_service: MediaService,
+    pub media_dir: PathBuf,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -30,6 +32,10 @@ pub fn run() {
             // 创建数据库路径
             let db_path: PathBuf = app_dir.join("ai_editor.db");
 
+            // 创建媒体存储目录
+            let media_dir = app_dir.join("media");
+            std::fs::create_dir_all(&media_dir).expect("Failed to create media directory");
+
             // 初始化数据库（在 async 运行时中）
             tauri::async_runtime::block_on(async {
                 let db = Database::new(db_path)
@@ -44,6 +50,8 @@ pub fn run() {
                     file_service: FileService::new(pool.clone()),
                     tag_service: TagService::new(pool.clone()),
                     search_service: SearchService::new(pool.clone()),
+                    media_service: MediaService::new(pool.clone()),
+                    media_dir,
                 };
 
                 // 管理状态
@@ -55,6 +63,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // 窗口管理
             open_editor_window,
+            open_settings_window,
             // 工作空间
             create_workspace,
             get_workspace,
@@ -80,6 +89,12 @@ pub fn run() {
             search_files,
             search_by_tags,
             find_similar_files,
+            // 媒体
+            upload_media,
+            get_media,
+            get_media_path,
+            list_file_media,
+            delete_media,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

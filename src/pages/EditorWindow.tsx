@@ -1,17 +1,24 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import { fileAPI, type File } from '../services/database'
-import { useSettingsStore } from '../store/settings'
-import { callAI } from '../services/ai'
 import { SlashCommand } from '../extensions/SlashCommand'
 import { AIEditPopover } from '../components/AIEditPopover'
+import { MediaImage, handleImageUpload } from '../extensions/MediaImage'
 
 // 复用之前的工具栏组件
-function EditorToolbar({ editor, onAIEdit }: { editor: any; onAIEdit: () => void }) {
+function EditorToolbar({
+    editor,
+    onAIEdit,
+    onImageUpload,
+}: {
+    editor: any
+    onAIEdit: () => void
+    onImageUpload: () => void
+}) {
     if (!editor) return null
 
     return (
@@ -110,6 +117,16 @@ function EditorToolbar({ editor, onAIEdit }: { editor: any; onAIEdit: () => void
                 </button>
             </div>
 
+            <div className="w-px h-4 bg-gray-300/60" />
+
+            <button
+                onClick={onImageUpload}
+                className="px-2 py-1 text-xs rounded hover:bg-gray-200/60 transition-colors text-gray-700"
+                title="插入图片"
+            >
+                🖼️
+            </button>
+
             <div className="flex-1" />
 
             <button
@@ -185,7 +202,9 @@ export default function EditorWindow() {
     const [selectedText, setSelectedText] = useState('')
     const [aiPopoverPosition, setAIPopoverPosition] = useState<{ top: number; left: number } | null>(null)
     const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null)
+    const [uploading, setUploading] = useState(false)
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(1)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const editor = useEditor({
         extensions: [
@@ -195,6 +214,7 @@ export default function EditorWindow() {
             }),
             CharacterCount,
             SlashCommand,
+            MediaImage,
         ],
         content: '',
         onUpdate: ({ editor }) => {
@@ -267,11 +287,13 @@ export default function EditorWindow() {
     }
 
     const handleSave = async (content: string) => {
-        if (!file) return
+        if (!file || !editor) return
 
         try {
             setSaving(true)
-            await fileAPI.update(file.id, { content })
+            // 提取纯文本用于全文索引
+            const contentPlain = editor.getText()
+            await fileAPI.update(file.id, { content, content_plain: contentPlain })
         } catch (error) {
             console.error('保存失败：', error)
         } finally {
@@ -307,6 +329,41 @@ export default function EditorWindow() {
         setSelectedText('')
     }
 
+    // 图片上传处理
+    const handleImageUploadClick = () => {
+        fileInputRef.current?.click()
+    }
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files
+        if (!files || files.length === 0 || !file || !editor) return
+
+        setUploading(true)
+        try {
+            for (const imageFile of Array.from(files)) {
+                if (!imageFile.type.startsWith('image/')) {
+                    alert('只支持图片文件')
+                    continue
+                }
+
+                const result = await handleImageUpload(imageFile, file.workspace_id, file.id)
+                    ; (editor.commands as any).setMediaImage({
+                        mediaSrc: result.mediaSrc,
+                        width: result.width,
+                        height: result.height,
+                    })
+            }
+        } catch (error) {
+            alert('上传失败：' + error)
+        } finally {
+            setUploading(false)
+            // 清空 input 以便重复选择同一文件
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+            }
+        }
+    }
+
     if (loading) {
         return (
             <div className="h-screen flex items-center justify-center">
@@ -338,11 +395,28 @@ export default function EditorWindow() {
                     placeholder="文档标题..."
                 />
                 {saving && <span className="text-xs text-gray-400">保存中...</span>}
+                {uploading && <span className="text-xs text-blue-400 ml-2">上传中...</span>}
             </div>
+
+            {/* 隐藏的文件输入 */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+            />
 
             {/* 编辑器 */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                {editor && <EditorToolbar editor={editor} onAIEdit={handleAIEdit} />}
+                {editor && (
+                    <EditorToolbar
+                        editor={editor}
+                        onAIEdit={handleAIEdit}
+                        onImageUpload={handleImageUploadClick}
+                    />
+                )}
 
                 <FloatingToolbar editor={editor} position={toolbarPosition} onAIEdit={handleAIEdit} />
 

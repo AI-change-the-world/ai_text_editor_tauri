@@ -20,10 +20,10 @@ impl FileService {
         let file = sqlx::query_as::<_, File>(
             r#"
             INSERT INTO files (
-                id, workspace_id, file_type, title, content, 
+                id, workspace_id, file_type, title, content, content_plain,
                 file_path, file_size, mime_type, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING *
             "#,
         )
@@ -32,6 +32,7 @@ impl FileService {
         .bind(&data.file_type)
         .bind(&data.title)
         .bind(&data.content)
+        .bind(&data.content_plain)
         .bind(&data.file_path)
         .bind(&data.file_size)
         .bind(&data.mime_type)
@@ -89,6 +90,11 @@ impl FileService {
         if let Some(content) = data.content {
             query.push_str(", content = ?");
             params.push(content);
+        }
+
+        if let Some(content_plain) = data.content_plain {
+            query.push_str(", content_plain = ?");
+            params.push(content_plain);
         }
 
         if let Some(file_path) = data.file_path {

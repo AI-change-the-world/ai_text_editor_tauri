@@ -685,7 +685,7 @@ export default function App() {
       <header className="border-b border-gray-200/80 px-3 py-2 flex items-center justify-between bg-white/80 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <span className="text-base">📝</span>
-          <span className="text-sm font-semibold text-gray-800">AI 文本编辑器</span>
+          <span className="text-sm font-semibold text-gray-800">云笺妙笔</span>
         </div>
 
         <button
@@ -728,7 +728,7 @@ export default function App() {
               <div>
                 <div className="text-5xl mb-3 opacity-40">📄</div>
                 <h3 className="text-base font-medium text-gray-700 mb-1.5">
-                  欢迎使用 AI 文本编辑器
+                  欢迎使用 云笺妙笔
                 </h3>
                 <p className="text-xs text-gray-400">
                   选择或创建一个文档开始编辑

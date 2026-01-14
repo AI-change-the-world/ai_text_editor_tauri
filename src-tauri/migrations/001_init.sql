@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS files (
     workspace_id TEXT NOT NULL,
     file_type TEXT NOT NULL, -- 'document', 'image', 'audio', 'video'
     title TEXT NOT NULL,
-    content TEXT, -- 文档内容（HTML）或文件路径
+    content TEXT, -- 文档内容（HTML）
+    content_plain TEXT, -- 纯文本内容（用于全文索引）
     file_path TEXT, -- 媒体文件的实际路径
     file_size INTEGER, -- 文件大小（字节）
     mime_type TEXT, -- MIME 类型
@@ -22,11 +23,35 @@ CREATE TABLE IF NOT EXISTS files (
     FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
 );
 
+-- 媒体资源表（存储文档中引用的图片等）
+CREATE TABLE IF NOT EXISTS media_assets (
+    id TEXT PRIMARY KEY NOT NULL,
+    workspace_id TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    mime_type TEXT NOT NULL,
+    width INTEGER,
+    height INTEGER,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+);
+
+-- 文档-媒体关联表
+CREATE TABLE IF NOT EXISTS file_media (
+    file_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (file_id, media_id),
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE CASCADE
+);
+
 -- 标签表
 CREATE TABLE IF NOT EXISTS tags (
     id TEXT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL UNIQUE,
-    color TEXT, -- 标签颜色
+    color TEXT,
     created_at TEXT NOT NULL
 );
 
@@ -40,7 +65,7 @@ CREATE TABLE IF NOT EXISTS file_tags (
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
--- 全文搜索表（使用 FTS5）
+-- 全文搜索表（使用纯文本内容）
 CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
     file_id UNINDEXED,
     title,
@@ -50,16 +75,16 @@ CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
     content_rowid='rowid'
 );
 
--- 触发器：插入文件时同步到 FTS
+-- 触发器：插入文件时同步到 FTS（使用 content_plain）
 CREATE TRIGGER IF NOT EXISTS files_ai AFTER INSERT ON files BEGIN
     INSERT INTO files_fts(file_id, title, content, tags)
-    VALUES (new.id, new.title, new.content, '');
+    VALUES (new.id, new.title, COALESCE(new.content_plain, ''), '');
 END;
 
 -- 触发器：更新文件时同步到 FTS
 CREATE TRIGGER IF NOT EXISTS files_au AFTER UPDATE ON files BEGIN
     UPDATE files_fts 
-    SET title = new.title, content = new.content
+    SET title = new.title, content = COALESCE(new.content_plain, '')
     WHERE file_id = new.id;
 END;
 
@@ -74,3 +99,6 @@ CREATE INDEX IF NOT EXISTS idx_files_type ON files(file_type);
 CREATE INDEX IF NOT EXISTS idx_files_updated ON files(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_file_tags_file ON file_tags(file_id);
 CREATE INDEX IF NOT EXISTS idx_file_tags_tag ON file_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_media_workspace ON media_assets(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_file_media_file ON file_media(file_id);
+CREATE INDEX IF NOT EXISTS idx_file_media_media ON file_media(media_id);
