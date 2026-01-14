@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { emitTo } from '@tauri-apps/api/event'
+import { getAllWebviewWindows } from '@tauri-apps/api/webviewWindow'
 
 // ============ AI 提供商 ============
 
@@ -39,7 +41,7 @@ interface SettingsState {
     defaultProviderId: string | null
 
     // 外观操作
-    setAppearance: (settings: Partial<AppearanceSettings>) => void
+    setAppearance: (settings: Partial<AppearanceSettings>, broadcast?: boolean) => void
     resetAppearance: () => void
 
     // AI 操作
@@ -50,7 +52,20 @@ interface SettingsState {
     getActiveProvider: () => AIProvider | null
 }
 
-const generateId = () => Math.random().toString(36).substr(2, 9)
+const generateId = () => Math.random().toString(36).slice(2, 11)
+
+// 广播设置到所有窗口
+async function broadcastSettings(appearance: AppearanceSettings) {
+    try {
+        const windows = await getAllWebviewWindows()
+        console.log('Broadcasting to windows:', windows.map(w => w.label))
+        for (const win of windows) {
+            await emitTo(win.label, 'settings-changed', { appearance })
+        }
+    } catch (e) {
+        console.error('Failed to broadcast settings:', e)
+    }
+}
 
 // 默认外观设置
 const defaultAppearance: AppearanceSettings = {
@@ -88,14 +103,20 @@ export const useSettingsStore = create<SettingsState>()(
             ],
             defaultProviderId: null,
 
-            setAppearance: (settings) => {
+            setAppearance: (settings, broadcast = true) => {
                 set((state) => ({
                     appearance: { ...state.appearance, ...settings },
                 }))
+                // 广播设置变更到其他窗口
+                if (broadcast) {
+                    const newAppearance = { ...get().appearance, ...settings }
+                    broadcastSettings(newAppearance)
+                }
             },
 
             resetAppearance: () => {
                 set({ appearance: defaultAppearance })
+                broadcastSettings(defaultAppearance)
             },
 
             addProvider: (provider) => {

@@ -31,8 +31,8 @@ export default function SettingsWindow() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${activeTab === tab.id
-                                    ? 'bg-blue-500 text-white'
-                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                ? 'bg-blue-500 text-white'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                         >
                             <span>{tab.icon}</span>
@@ -81,8 +81,8 @@ function AppearanceSettings() {
                                 key={mode}
                                 onClick={() => handleChange('theme', mode)}
                                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${appearance.theme === mode
-                                        ? 'bg-blue-500 text-white border-blue-500'
-                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                    ? 'bg-blue-500 text-white border-blue-500'
+                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                                     }`}
                             >
                                 {mode === 'light' && '☀️ 浅色'}
@@ -101,8 +101,8 @@ function AppearanceSettings() {
                                 key={size}
                                 onClick={() => handleChange('fontSize', size)}
                                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${appearance.fontSize === size
-                                        ? 'bg-blue-500 text-white border-blue-500'
-                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                    ? 'bg-blue-500 text-white border-blue-500'
+                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                                     }`}
                             >
                                 {size === 'small' && '小'}
@@ -121,8 +121,8 @@ function AppearanceSettings() {
                                 key={width}
                                 onClick={() => handleChange('editorWidth', width)}
                                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${appearance.editorWidth === width
-                                        ? 'bg-blue-500 text-white border-blue-500'
-                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                    ? 'bg-blue-500 text-white border-blue-500'
+                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                                     }`}
                             >
                                 {width === 'narrow' && '窄'}
@@ -349,7 +349,7 @@ function AboutSettings() {
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                            AI 文本编辑器
+                            云笺妙笔
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">版本 0.1.0</p>
                     </div>
